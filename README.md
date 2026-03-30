@@ -88,18 +88,3 @@ npm start
 | **Magic strings** | `'todo'`, `'in_progress'`, `'done'`, `'blocked'` repeated throughout |
 
 ---
-
-## Modernisation Ideas
-
-- Split `AppManager` into `UserRepository`, `ProjectRepository`, `TaskRepository`,
-  `NotificationService`, `EmailService`, `ReportService`
-- Move secrets to `.env` / environment variables
-- Add a proper auth middleware / decorator in Flask
-- Add Pydantic models for request validation
-- Replace the god component with a proper component tree:
-  `<AuthProvider>` → `<Layout>` → `<ProjectList>` → `<TaskBoard>` → `<TaskCard>`
-- Extract an `api.js` module (or React Query / SWR) for all HTTP calls
-- Replace manual form state with React Hook Form
-- Add `useAuth`, `useProjects`, `useTasks` custom hooks
-- Add proper error boundaries
-- Use an ORM (SQLAlchemy) instead of raw SQL
