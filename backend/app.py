@@ -1,25 +1,11 @@
-"""
-Flask entry point.
-
-Architecture issues present for modernisation:
-  - Route handlers contain business logic (no controller / service split)
-  - Auth middleware is a helper function copy-pasted on every route
-  - Error handling is inconsistent – some routes return 500 bare, others 400
-  - No request validation layer (Pydantic / Marshmallow)
-  - God class (app_manager) called directly from routes
-"""
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from app_manager import app_manager
 
 app = Flask(__name__)
-CORS(app)   # CORS open for all origins – security issue
+CORS(app)
 
 
-# ------------------------------------------------------------------ #
-#  Auth helper – should be middleware / decorator, not repeated code  #
-# ------------------------------------------------------------------ #
 def _get_current_user():
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
@@ -31,9 +17,6 @@ def _get_current_user():
         return None
 
 
-# ------------------------------------------------------------------ #
-#  AUTH ROUTES                                                        #
-# ------------------------------------------------------------------ #
 @app.route("/api/auth/register", methods=["POST"])
 def register():
     data = request.get_json() or {}
@@ -70,16 +53,11 @@ def reset_password():
     return jsonify(result)
 
 
-# ------------------------------------------------------------------ #
-#  USER ROUTES                                                        #
-# ------------------------------------------------------------------ #
 @app.route("/api/users", methods=["GET"])
 def get_users():
-    # Auth check copy-pasted instead of using a decorator
     user = _get_current_user()
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
-    # Role check mixed into route handler
     if user.get("role") != "admin":
         return jsonify({"error": "Forbidden"}), 403
     users = app_manager.get_all_users()
@@ -102,7 +80,6 @@ def update_user(user_id):
     current = _get_current_user()
     if not current:
         return jsonify({"error": "Unauthorized"}), 401
-    # Business rule mixed in route: only self or admin can update
     if current["id"] != user_id and current.get("role") != "admin":
         return jsonify({"error": "Forbidden"}), 403
     data = request.get_json() or {}
@@ -146,9 +123,6 @@ def user_report(user_id):
     return jsonify(app_manager.generate_user_report(user_id))
 
 
-# ------------------------------------------------------------------ #
-#  PROJECT ROUTES                                                     #
-# ------------------------------------------------------------------ #
 @app.route("/api/projects", methods=["GET"])
 def get_projects():
     current = _get_current_user()
@@ -210,9 +184,6 @@ def project_report(project_id):
         return jsonify({"error": str(e)}), 404
 
 
-# ------------------------------------------------------------------ #
-#  TASK ROUTES                                                        #
-# ------------------------------------------------------------------ #
 @app.route("/api/tasks", methods=["GET"])
 def get_tasks():
     current = _get_current_user()
@@ -221,7 +192,6 @@ def get_tasks():
     project_id = request.args.get("project_id", type=int)
     assignee_id = request.args.get("assignee_id", type=int)
 
-    # Business logic branching mixed in route
     if project_id:
         return jsonify(app_manager.get_tasks_by_project(project_id))
     elif assignee_id:
@@ -283,9 +253,6 @@ def attach_file(task_id):
     return jsonify(result)
 
 
-# ------------------------------------------------------------------ #
-#  COMMENT ROUTES                                                     #
-# ------------------------------------------------------------------ #
 @app.route("/api/tasks/<int:task_id>/comments", methods=["GET"])
 def get_comments(task_id):
     current = _get_current_user()
@@ -315,9 +282,6 @@ def delete_comment(comment_id):
     return jsonify(app_manager.delete_comment(comment_id))
 
 
-# ------------------------------------------------------------------ #
-#  NOTIFICATION ROUTES                                                #
-# ------------------------------------------------------------------ #
 @app.route("/api/notifications", methods=["GET"])
 def get_notifications():
     current = _get_current_user()
@@ -334,9 +298,6 @@ def mark_read(notif_id):
     return jsonify(app_manager.mark_notification_read(notif_id))
 
 
-# ------------------------------------------------------------------ #
-#  SEARCH                                                             #
-# ------------------------------------------------------------------ #
 @app.route("/api/search", methods=["GET"])
 def search():
     current = _get_current_user()
@@ -348,9 +309,6 @@ def search():
     return jsonify(app_manager.search(query))
 
 
-# ------------------------------------------------------------------ #
-#  SYSTEM STATS                                                       #
-# ------------------------------------------------------------------ #
 @app.route("/api/stats", methods=["GET"])
 def stats():
     current = _get_current_user()
@@ -361,7 +319,6 @@ def stats():
     try:
         return jsonify(app_manager.get_system_stats())
     except Exception:
-        # psutil may not be installed – silent fallback
         return jsonify({"error": "Stats unavailable"}), 500
 
 

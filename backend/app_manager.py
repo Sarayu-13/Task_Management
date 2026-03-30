@@ -1,20 +1,3 @@
-"""
-AppManager - GOD CLASS (intentional anti-pattern for modernisation testing)
-
-Issues present for modernisation:
-  - Single class handles: DB init, auth, users, projects, tasks,
-    comments, notifications, email, reporting, file storage, search
-  - Hardcoded SECRET_KEY and DB path
-  - No separation of concerns (repository / service / controller layers)
-  - No dependency injection
-  - Singleton exported at module level
-  - Notification side-effects buried inside update methods
-  - Nested callback-style DB calls
-  - Report caching mixed with business logic
-  - Email queue processed inline
-  - Raw SQL everywhere instead of ORM
-"""
-
 import sqlite3
 import bcrypt
 import jwt
@@ -23,9 +6,6 @@ import json
 import math
 from datetime import datetime, timezone
 
-# ------------------------------------------------------------------ #
-#  Hardcoded secrets / config – should live in env / config layer     #
-# ------------------------------------------------------------------ #
 SECRET_KEY = "supersecretkey123"
 DB_PATH = os.path.join(os.path.dirname(__file__), "app.db")
 TOKEN_EXPIRY_HOURS = 24
@@ -35,27 +15,17 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
-# ------------------------------------------------------------------ #
-#  God Class                                                          #
-# ------------------------------------------------------------------ #
 class AppManager:
-    """
-    Handles absolutely everything.  This is the god class you came to see.
-    """
 
     def __init__(self):
         self.db_path = DB_PATH
-        self.notifications_cache = []   # in-memory mixed with DB notifications
-        self.email_queue = []           # fake email queue lives here
-        self.report_cache = {}          # report caching mixed into business logic
-        self.active_users = {}          # session tracking mixed into auth
-        self.file_store = {}            # in-memory file storage
-
+        self.notifications_cache = []
+        self.email_queue = []
+        self.report_cache = {}
+        self.active_users = {}
+        self.file_store = {}
         self._init_db()
 
-    # -------------------------------------------------------------- #
-    #  Database – schema creation lives here instead of migrations    #
-    # -------------------------------------------------------------- #
     def _get_conn(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -129,11 +99,7 @@ class AppManager:
                 );
             """)
 
-    # -------------------------------------------------------------- #
-    #  AUTH – mixed with user management                              #
-    # -------------------------------------------------------------- #
     def register_user(self, username, email, password, role="user"):
-        # Validation mixed directly into data-access method
         if not username or len(username) < 3:
             raise ValueError("Username must be at least 3 characters")
         if not email or "@" not in email:
@@ -163,18 +129,15 @@ class AppManager:
         if not bcrypt.checkpw(password.encode(), user["password"].encode()):
             raise ValueError("Invalid password")
 
-        # Update last login – side-effect inside auth method
         with self._get_conn() as conn:
             conn.execute("UPDATE users SET last_login=? WHERE id=?", (_now(), user["id"]))
 
-        # Session tracking mixed into auth
         self.active_users[user["id"]] = {
             "id": user["id"],
             "username": user["username"],
             "login_time": _now(),
         }
 
-        # Email notification side-effect inside login
         self.email_queue.append({
             "to": user["email"],
             "subject": "New login detected",
@@ -209,9 +172,6 @@ class AppManager:
         except jwt.InvalidTokenError:
             raise ValueError("Invalid token")
 
-    # -------------------------------------------------------------- #
-    #  USER MANAGEMENT                                                #
-    # -------------------------------------------------------------- #
     def get_user_by_id(self, user_id):
         with self._get_conn() as conn:
             row = conn.execute(
@@ -230,7 +190,6 @@ class AppManager:
         return [dict(r) for r in rows]
 
     def update_user_profile(self, user_id, data):
-        # No input sanitisation
         username = data.get("username")
         email = data.get("email")
         bio = data.get("bio")
@@ -253,9 +212,6 @@ class AppManager:
         self.active_users.pop(user_id, None)
         return {"message": "User deleted"}
 
-    # -------------------------------------------------------------- #
-    #  PROJECT MANAGEMENT                                             #
-    # -------------------------------------------------------------- #
     def create_project(self, data, owner_id):
         name = data.get("name")
         if not name:
@@ -349,14 +305,10 @@ class AppManager:
 
     def delete_project(self, project_id):
         with self._get_conn() as conn:
-            # Manual cascade – no FK enforcement relied upon
             conn.execute("DELETE FROM tasks WHERE project_id=?", (project_id,))
             conn.execute("DELETE FROM projects WHERE id=?", (project_id,))
         return {"message": "Project deleted"}
 
-    # -------------------------------------------------------------- #
-    #  TASK MANAGEMENT                                                #
-    # -------------------------------------------------------------- #
     def create_task(self, data, creator_id):
         title = data.get("title")
         if not title:
@@ -388,7 +340,6 @@ class AppManager:
             )
             task_id = cur.lastrowid
 
-        # Notification side-effect buried inside create
         if data.get("assignee_id"):
             self._add_notification(
                 data["assignee_id"],
@@ -473,7 +424,6 @@ class AppManager:
                 ),
             )
 
-        # Notification & email side-effects buried inside update
         if data.get("status") == "done":
             self._add_notification(None, f"Task {task_id} completed", "task_completed")
             self.email_queue.append({
@@ -491,9 +441,6 @@ class AppManager:
             conn.execute("DELETE FROM tasks WHERE id=?", (task_id,))
         return {"message": "Task deleted"}
 
-    # -------------------------------------------------------------- #
-    #  COMMENTS                                                       #
-    # -------------------------------------------------------------- #
     def add_comment(self, task_id, user_id, content):
         if not content or not content.strip():
             raise ValueError("Comment cannot be empty")
@@ -521,11 +468,7 @@ class AppManager:
             conn.execute("DELETE FROM comments WHERE id=?", (comment_id,))
         return {"message": "Comment deleted"}
 
-    # -------------------------------------------------------------- #
-    #  NOTIFICATIONS  (in-memory + DB – mixed)                       #
-    # -------------------------------------------------------------- #
     def _add_notification(self, user_id, message, notif_type):
-        # Writes to both in-memory list AND DB – inconsistent state management
         self.notifications_cache.append({
             "user_id": user_id,
             "message": message,
@@ -552,13 +495,9 @@ class AppManager:
             conn.execute("UPDATE notifications SET is_read=1 WHERE id=?", (notif_id,))
         return {"message": "Marked as read"}
 
-    # -------------------------------------------------------------- #
-    #  EMAIL  (fake queue – mixed into god class)                     #
-    # -------------------------------------------------------------- #
     def _process_email_queue(self):
         while self.email_queue:
             email = self.email_queue.pop(0)
-            # Simulate sending – just prints
             print(f"[EMAIL] To: {email['to']} | Subject: {email['subject']}")
 
     def send_password_reset(self, email):
@@ -573,9 +512,6 @@ class AppManager:
         self._process_email_queue()
         return {"message": "Reset email sent", "debug_token": token}
 
-    # -------------------------------------------------------------- #
-    #  REPORTING & ANALYTICS  (all mixed in)                         #
-    # -------------------------------------------------------------- #
     def generate_project_report(self, project_id):
         with self._get_conn() as conn:
             project = conn.execute("SELECT * FROM projects WHERE id=?", (project_id,)).fetchone()
@@ -609,7 +545,6 @@ class AppManager:
             "generated_at": _now(),
         }
 
-        # Report caching mixed into business logic
         self.report_cache[f"project_{project_id}"] = {"data": report, "ts": _now()}
         return report
 
@@ -646,7 +581,7 @@ class AppManager:
         }
 
     def get_system_stats(self):
-        import psutil  # intentionally risky optional import mixed in
+        import psutil
         with self._get_conn() as conn:
             user_count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
             project_count = conn.execute("SELECT COUNT(*) FROM projects").fetchone()[0]
@@ -663,9 +598,6 @@ class AppManager:
             "report_cache_entries": len(self.report_cache),
         }
 
-    # -------------------------------------------------------------- #
-    #  FILE ATTACHMENTS  (in-memory, mixed in)                       #
-    # -------------------------------------------------------------- #
     def attach_file_to_task(self, task_id, file_name, file_data):
         self.file_store[f"task_{task_id}_{file_name}"] = file_data
 
@@ -679,9 +611,6 @@ class AppManager:
             )
         return {"message": "File attached", "attachments": attachments}
 
-    # -------------------------------------------------------------- #
-    #  SEARCH  (mixed in, no full-text search)                       #
-    # -------------------------------------------------------------- #
     def search(self, query):
         q = f"%{query}%"
         with self._get_conn() as conn:
@@ -699,9 +628,6 @@ class AppManager:
             "total": len(tasks) + len(projects),
         }
 
-    # -------------------------------------------------------------- #
-    #  USER SETTINGS  (another responsibility dumped here)           #
-    # -------------------------------------------------------------- #
     def get_user_settings(self, user_id):
         with self._get_conn() as conn:
             row = conn.execute("SELECT settings FROM users WHERE id=?", (user_id,)).fetchone()
@@ -715,14 +641,8 @@ class AppManager:
             )
         return {"message": "Settings saved"}
 
-    # -------------------------------------------------------------- #
-    #  Utility – only used to silence the unused import warning       #
-    # -------------------------------------------------------------- #
     def _calculate_pages(self, total, per_page):
         return math.ceil(total / per_page) if per_page else 0
 
 
-# ------------------------------------------------------------------ #
-#  Singleton  – module-level instance exported (anti-pattern)        #
-# ------------------------------------------------------------------ #
 app_manager = AppManager()

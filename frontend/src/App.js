@@ -1,37 +1,18 @@
-/**
- * App.js  –  GOD COMPONENT  (intentional anti-pattern for modernisation testing)
- *
- * Issues present:
- *  - All state in one component (auth, projects, tasks, comments, notifications,
- *    search, UI state, form state, report state)
- *  - Direct fetch() calls scattered throughout event handlers – no API layer
- *  - No custom hooks – all logic inline
- *  - No component decomposition – 700+ lines in one file
- *  - Token stored in localStorage without expiry handling
- *  - No loading / error boundary strategy
- *  - Magic strings for status / priority values
- *  - Conditional rendering via long if/else chains
- *  - No form library – manual state fields for every form
- */
-
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
 const BASE_URL = 'http://localhost:5000/api';
 
 export default function App() {
-  // ── Auth state ────────────────────────────────────────────────
   const [token, setToken]           = useState(localStorage.getItem('token') || '');
   const [currentUser, setCurrentUser] = useState(
     JSON.parse(localStorage.getItem('user') || 'null')
   );
 
-  // ── View / tab state ──────────────────────────────────────────
-  const [view, setView]             = useState('login');   // login | register | dashboard | projects | tasks | profile | search | report
+  const [view, setView]             = useState('login');
   const [activeProject, setActiveProject] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
 
-  // ── Data state ────────────────────────────────────────────────
   const [projects, setProjects]     = useState([]);
   const [tasks, setTasks]           = useState([]);
   const [comments, setComments]     = useState([]);
@@ -40,22 +21,18 @@ export default function App() {
   const [searchResults, setSearchResults] = useState(null);
   const [report, setReport]         = useState(null);
 
-  // ── Loading / error state ─────────────────────────────────────
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
   const [success, setSuccess]       = useState('');
 
-  // ── Login form state ──────────────────────────────────────────
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // ── Register form state ───────────────────────────────────────
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail]     = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regRole, setRegRole]       = useState('user');
 
-  // ── Project form state ────────────────────────────────────────
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
@@ -65,7 +42,6 @@ export default function App() {
   const [projectBudget, setProjectBudget]     = useState('');
   const [editingProject, setEditingProject]   = useState(null);
 
-  // ── Task form state ───────────────────────────────────────────
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskTitle, setTaskTitle]       = useState('');
   const [taskDesc, setTaskDesc]         = useState('');
@@ -77,19 +53,11 @@ export default function App() {
   const [taskAssigneeId, setTaskAssigneeId] = useState('');
   const [editingTask, setEditingTask]   = useState(null);
 
-  // ── Comment form state ────────────────────────────────────────
   const [commentContent, setCommentContent] = useState('');
-
-  // ── Search state ──────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
-
-  // ── Profile edit state ────────────────────────────────────────
   const [editBio, setEditBio]   = useState('');
   const [editAvatar, setEditAvatar] = useState('');
 
-  // ─────────────────────────────────────────────────────────────
-  //  Helpers  (raw fetch repeated everywhere – no shared API client)
-  // ─────────────────────────────────────────────────────────────
   const authHeaders = () => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
@@ -101,14 +69,10 @@ export default function App() {
     setTimeout(() => { setError(''); setSuccess(''); }, 3000);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  //  AUTH
-  // ─────────────────────────────────────────────────────────────
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Direct fetch in event handler – no API abstraction
       const res = await fetch(`${BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -155,21 +119,16 @@ export default function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setView('login');
-    // Resetting all state manually instead of a proper auth context reset
     setProjects([]); setTasks([]); setComments([]);
     setNotifications([]); setSearchResults(null); setReport(null);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  //  DASHBOARD  (loads multiple resources inline)
-  // ─────────────────────────────────────────────────────────────
   const loadDashboard = async (tkn, usr) => {
     const t = tkn || token;
     const u = usr || currentUser;
     if (!t || !u) return;
     setLoading(true);
     try {
-      // Three separate fetches in one function – no Promise.all
       const pRes = await fetch(`${BASE_URL}/projects`, { headers: { Authorization: `Bearer ${t}` } });
       const pData = await pRes.json();
       setProjects(pData);
@@ -198,9 +157,6 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─────────────────────────────────────────────────────────────
-  //  PROJECTS
-  // ─────────────────────────────────────────────────────────────
   const loadProjects = async () => {
     setLoading(true);
     try {
@@ -232,7 +188,6 @@ export default function App() {
       showMsg(editingProject ? 'Project updated!' : 'Project created!');
       setShowProjectForm(false);
       setEditingProject(null);
-      // Reset all form fields manually
       setProjectName(''); setProjectDesc(''); setProjectPriority('medium');
       setProjectStartDate(''); setProjectEndDate(''); setProjectBudget('');
       loadProjects();
@@ -277,9 +232,6 @@ export default function App() {
     finally { setLoading(false); }
   };
 
-  // ─────────────────────────────────────────────────────────────
-  //  TASKS
-  // ─────────────────────────────────────────────────────────────
   const handleCreateTask = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -346,9 +298,6 @@ export default function App() {
     if (activeProject) openProject(activeProject);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  //  COMMENTS
-  // ─────────────────────────────────────────────────────────────
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!activeTask) return;
@@ -363,17 +312,11 @@ export default function App() {
     } catch { showMsg('Failed to add comment', true); }
   };
 
-  // ─────────────────────────────────────────────────────────────
-  //  NOTIFICATIONS
-  // ─────────────────────────────────────────────────────────────
   const markNotifRead = async (id) => {
     await fetch(`${BASE_URL}/notifications/${id}/read`, { method: 'PUT', headers: authHeaders() });
     setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: 1 } : n));
   };
 
-  // ─────────────────────────────────────────────────────────────
-  //  SEARCH
-  // ─────────────────────────────────────────────────────────────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -385,9 +328,6 @@ export default function App() {
     finally { setLoading(false); }
   };
 
-  // ─────────────────────────────────────────────────────────────
-  //  PROFILE
-  // ─────────────────────────────────────────────────────────────
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
@@ -401,9 +341,6 @@ export default function App() {
     } catch (err) { showMsg(err.message, true); }
   };
 
-  // ─────────────────────────────────────────────────────────────
-  //  RENDER HELPERS  (all inlined, no sub-components)
-  // ─────────────────────────────────────────────────────────────
   const priorityColor = (p) =>
     p === 'high' ? '#e74c3c' : p === 'medium' ? '#f39c12' : '#27ae60';
 
@@ -414,12 +351,8 @@ export default function App() {
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
-  // ─────────────────────────────────────────────────────────────
-  //  RENDER
-  // ─────────────────────────────────────────────────────────────
   return (
     <div className="app">
-      {/* ── Navbar ── */}
       {currentUser && (
         <nav className="navbar">
           <span className="logo">TaskManager</span>
@@ -437,14 +370,12 @@ export default function App() {
         </nav>
       )}
 
-      {/* ── Global messages ── */}
       {error   && <div className="alert error">{error}</div>}
       {success && <div className="alert success">{success}</div>}
       {loading && <div className="loading-bar" />}
 
       <div className="content">
 
-        {/* ────────────────────── LOGIN ────────────────────── */}
         {view === 'login' && (
           <div className="auth-card">
             <h2>Sign In</h2>
@@ -459,7 +390,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ────────────────────── REGISTER ────────────────────── */}
         {view === 'register' && (
           <div className="auth-card">
             <h2>Create Account</h2>
@@ -480,7 +410,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ────────────────────── DASHBOARD ────────────────────── */}
         {view === 'dashboard' && (
           <div>
             <h2>Dashboard</h2>
@@ -509,7 +438,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ────────────────────── PROJECTS ────────────────────── */}
         {view === 'projects' && (
           <div>
             <div className="section-header">
@@ -565,7 +493,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ────────────────────── TASKS ────────────────────── */}
         {view === 'tasks' && activeProject && (
           <div>
             <div className="section-header">
@@ -612,7 +539,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Kanban-style columns – all inline */}
             <div className="kanban">
               {['todo', 'in_progress', 'done', 'blocked'].map(col => (
                 <div key={col} className="kanban-col">
@@ -644,7 +570,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Task detail panel */}
             {activeTask && (
               <div className="task-detail">
                 <div className="section-header">
@@ -672,7 +597,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ────────────────────── SEARCH ────────────────────── */}
         {view === 'search' && (
           <div>
             <h2>Search</h2>
@@ -710,7 +634,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ────────────────────── NOTIFICATIONS ────────────────────── */}
         {view === 'notifications' && (
           <div>
             <h2>Notifications</h2>
@@ -727,7 +650,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ────────────────────── PROFILE ────────────────────── */}
         {view === 'profile' && currentUser && (
           <div className="profile-card">
             <h2>Profile</h2>
@@ -743,7 +665,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ────────────────────── REPORT ────────────────────── */}
         {view === 'report' && report && (
           <div>
             <button className="back-btn" onClick={() => { setView('projects'); loadProjects(); }}>← Back</button>
