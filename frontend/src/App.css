@@ -1,0 +1,294 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f0f2f5;
+  color: #333;
+}
+
+/* ── Navbar ── */
+.navbar {
+  background: #2c3e50;
+  color: white;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo { font-size: 18px; font-weight: 700; color: #3498db; margin-right: 16px; }
+.nav-links { display: flex; gap: 8px; flex: 1; }
+.nav-links button, .logout-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.nav-links button:hover { background: rgba(255,255,255,0.1); }
+.logout-btn { background: #c0392b; border-color: #c0392b; }
+.user-label { font-size: 13px; color: #bdc3c7; white-space: nowrap; }
+.notif-btn { position: relative; }
+.badge {
+  background: #e74c3c;
+  border-radius: 50%;
+  padding: 1px 5px;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+/* ── Layout ── */
+.app { min-height: 100vh; }
+.content { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+/* ── Alerts ── */
+.alert {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 6px;
+  z-index: 200;
+  font-weight: 500;
+}
+.alert.error   { background: #e74c3c; color: white; }
+.alert.success { background: #27ae60; color: white; }
+.loading-bar {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #3498db;
+  animation: loadpulse 1s infinite;
+}
+@keyframes loadpulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+/* ── Auth ── */
+.auth-card {
+  max-width: 400px;
+  margin: 80px auto;
+  background: white;
+  padding: 32px;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+.auth-card h2 { margin-bottom: 24px; }
+.auth-card form { display: flex; flex-direction: column; gap: 12px; }
+.auth-card input, .auth-card select {
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.auth-card button[type="submit"] {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.auth-card p { margin-top: 16px; font-size: 14px; color: #666; }
+.link-btn { background: none; border: none; color: #3498db; cursor: pointer; text-decoration: underline; }
+
+/* ── Section header ── */
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.section-header button:not(.back-btn) {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.back-btn {
+  background: transparent;
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 12px;
+  color: #555;
+}
+
+/* ── Project & Task cards ── */
+.project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+.project-card, .task-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: box-shadow 0.2s;
+}
+.project-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.project-card h4 { margin-bottom: 8px; color: #2c3e50; }
+.project-card p, .task-card p { font-size: 13px; color: #666; margin: 4px 0; }
+
+/* ── Tags ── */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: white;
+  margin: 2px 4px 2px 0;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ── Card actions ── */
+.card-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.card-actions button {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+}
+.card-actions button:hover { background: #f0f0f0; }
+.card-actions button.danger { color: #e74c3c; border-color: #e74c3c; }
+
+/* ── Form card ── */
+.form-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.form-card form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-card input, .form-card select, .form-card textarea {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.form-card textarea { grid-column: 1 / -1; min-height: 80px; resize: vertical; }
+.form-card input[type="date"] { }
+.form-actions { grid-column: 1 / -1; display: flex; gap: 10px; }
+.form-actions button[type="submit"] {
+  background: #3498db; color: white; border: none;
+  padding: 8px 20px; border-radius: 6px; cursor: pointer;
+}
+.form-actions button[type="button"] {
+  background: white; border: 1px solid #ccc;
+  padding: 8px 20px; border-radius: 6px; cursor: pointer;
+}
+
+/* ── Stats ── */
+.stats-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px 28px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  min-width: 120px;
+}
+.stat-card h3 { font-size: 32px; color: #3498db; }
+.stat-card p  { font-size: 13px; color: #888; margin-top: 4px; }
+
+/* ── Kanban ── */
+.kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+.kanban-col { background: #f8f9fa; border-radius: 8px; padding: 12px; min-height: 300px; }
+.col-header {
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.task-card { margin-bottom: 10px; }
+.task-card h5 { font-size: 14px; color: #2c3e50; margin-bottom: 6px; }
+
+/* ── Task detail ── */
+.task-detail {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.comments { max-height: 300px; overflow-y: auto; margin-bottom: 12px; }
+.comment {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.comment-form { display: flex; gap: 8px; }
+.comment-form input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; }
+.comment-form button {
+  background: #3498db; color: white; border: none;
+  padding: 8px 16px; border-radius: 6px; cursor: pointer;
+}
+
+/* ── Search ── */
+.search-form { display: flex; gap: 10px; margin-bottom: 20px; }
+.search-form input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.search-form button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+.result-item {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.result-item:hover { background: #f0f7ff; }
+
+/* ── Notifications ── */
+.notif-item {
+  background: white;
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.notif-item.unread { border-left: 4px solid #3498db; }
+.notif-item.read   { opacity: 0.65; }
+.notif-item button {
+  margin-left: auto;
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  background: white;
+}
+
+/* ── Profile ── */
+.profile-card {
+  max-width: 500px;
+  background: white;
+  padding: 28px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.profile-card p { margin: 8px 0; font-size: 15px; }
+.profile-card form { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.profile-card textarea, .profile-card input {
+  padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+}
+.profile-card button { background: #3498db; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; }
+
+/* ── Misc ── */
+.small { font-size: 12px; color: #999; }
+h2 { margin-bottom: 20px; color: #2c3e50; }
+h3 { margin-bottom: 12px; color: #2c3e50; }
